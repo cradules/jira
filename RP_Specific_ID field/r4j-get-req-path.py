@@ -1,17 +1,15 @@
 # Import the request HTTP library for python
 # Documentation http://docs.python-requests.org/en/master/user/quickstart/
 import requests
-
 # Import HTTPBasicAuth to handle the required authentication for the web services
 from requests.auth import HTTPBasicAuth
-
 # Import json library to process encoding and decoding of JSON responses
 import json
-
-HOST_URL = "https://jira.sdlcpoc.eu"
-USER = "radulescuc"
-PASSWORD = "p3thbiAsFeqbgJBJ"
-PROJECT = "REQSDLC"
+import os
+HOST_URL = os.getenv('HOST_URL')
+USER = os.getenv('USER')
+PASSWORD = os.getenv('PASSWORD')
+PROJECT_ID = os.getenv('PROJECT_ID')
 
 
 def get_requirements_path_for_issues(host_url, username, password, jql):
@@ -42,16 +40,15 @@ if response.status_code == 200:
     # json dumps formats the JSON string in readable format
     json_object = json.loads(response.text)
     print(json_object)
-    # print(json_object[1]['paths'])
     count = 0
     issue = []
     while count < len(json_object):
-        issue =
-        print(json_object[count]['paths'], json_object[count]['issueKey'])
+        paths = json_object[count]['paths']
+        issue_id = json_object[count]['issueKey']
+        if paths:
+            print(issue_id)
+            print(paths[0]['path'][0])
         count += 1
-
-
-
 else:
     print('Error code: ', response.status_code)
     print(response.text)
