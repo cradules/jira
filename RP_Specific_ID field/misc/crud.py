@@ -8,7 +8,7 @@ import json
 import os
 from sqlalchemy.orm import Session
 from misc import models
-from database import SessionLocal
+import sqlite3
 
 HOST_URL = os.getenv('HOST_URL')
 USER = os.getenv('USER')
@@ -35,9 +35,15 @@ def get_requirements_path_for_issues(host_url, username, password, jql):
 
 
 def create_item(db: Session, project_id):
+    # Clear data before import new one, since is just temporary
+    conn = sqlite3.connect('sql_app.db')
+    c = conn.cursor()
+    c.execute('DELETE FROM items;',)
+    conn.commit()
+    conn.close()
+
     # ['project = REQ'] jql parameter to get the parent issue keys
     response = get_requirements_path_for_issues(HOST_URL, USER, PASSWORD, f'project = {project_id}')
-    print(response)
 
     # Check response if requirements path are found
     if response.status_code == 200:
@@ -49,9 +55,6 @@ def create_item(db: Session, project_id):
         # Iterate trough all objects and extract the db_elements
         # Declare global variables
         count = 0
-        issue_id = []
-        issue_type = []
-        pkg = []
         while count < len(json_object):
             # Extract the path of the objects
             paths = json_object[count]['paths']
@@ -71,8 +74,9 @@ def create_item(db: Session, project_id):
                     db.add(db_elements)
                     db.commit()
                     db.refresh(db_elements)
-                    # return db_elements
+
             count += 1
+        print("Insert done")
     else:
         print('Error code: ', response.status_code)
         print(response.text)
