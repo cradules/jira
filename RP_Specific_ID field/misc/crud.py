@@ -34,8 +34,9 @@ def get_requirements_path_for_issues(host_url, username, password, jql):
         print(e)
 
 
-def create_item(db: Session, project_id):
+def create_items(db: Session, project_id):
     # Clear data before import new one, since is just temporary
+    global db_BR
     conn = sqlite3.connect('sql_app.db')
     c = conn.cursor()
     c.execute('DELETE FROM items;',)
@@ -70,13 +71,13 @@ def create_item(db: Session, project_id):
                     txt = txt[0].split('.')
                     pkg = txt[1]
                     issue_type = paths[0]['path'][0]
-                    db_elements = models.Item(project_id=project_id, issue_id=issue_id, issue_type=issue_type, package=pkg)
-                    db.add(db_elements)
+                    db_BR = models.Item(project_id=project_id, issue_id=issue_id, issue_type=issue_type, package=pkg)
+                    db.add(db_BR)
                     db.commit()
-                    db.refresh(db_elements)
+                    db.refresh(db_BR)
 
             count += 1
-        print("Insert done")
-    else:
-        print('Error code: ', response.status_code)
-        print(response.text)
+    return db_BR
+    # else:
+    #     print('Error code: ', response.status_code)
+    #     print(response.text)

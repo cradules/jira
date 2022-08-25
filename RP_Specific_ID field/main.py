@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from misc import models, schemas
 from misc.database import SessionLocal, engine
-from misc.crud import create_item
+from misc.crud import create_items
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -25,7 +25,7 @@ def create_item_db(
         project_id: str,
         db: Session = Depends(get_db)
 ):
-    return create_item(db=db, project_id=project_id)
+    return create_items(db=db, project_id=project_id)
 
 
 uvicorn.run(app, host="0.0.0.0", port=5001, log_level="info")

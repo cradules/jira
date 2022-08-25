@@ -6,6 +6,8 @@ from requests.auth import HTTPBasicAuth
 # Import json library to process encoding and decoding of JSON responses
 import json
 import os
+
+
 HOST_URL = os.getenv('HOST_URL')
 USER = os.getenv('USER')
 PASSWORD = os.getenv('PASSWORD')
