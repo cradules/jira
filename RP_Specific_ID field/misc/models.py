@@ -11,5 +11,5 @@ class Item(Base):
     project_id = Column(String, index=True)
     issue_id = Column(String, unique=True, index=True)
     issue_type = Column(String, index=True)
-    package = Column(String, index=True)
-    # linked_issues = Column(String, index=True)
+    package = Column(String, index=True, nullable=True)
+    linked_issues = Column(String, index=True, nullable=True)

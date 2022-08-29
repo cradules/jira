@@ -9,11 +9,15 @@ import os
 from sqlalchemy.orm import Session
 from misc import models
 import sqlite3
+from jira import JIRA
 
 HOST_URL = os.getenv('HOST_URL')
 USER = os.getenv('USER')
 PASSWORD = os.getenv('PASSWORD')
 PROJECT_ID = os.getenv('PROJECT_ID')
+
+# Create instance for jira API, using jira python library
+jira = JIRA(server=HOST_URL, basic_auth=(USER, PASSWORD))
 
 
 def get_requirements_path_for_issues(host_url, username, password, jql):
@@ -35,15 +39,16 @@ def get_requirements_path_for_issues(host_url, username, password, jql):
 
 
 def create_items(db: Session, project_id):
-    # Clear data before import new one, since is just temporary
-    global db_BR
+    # Clear data before import new one, since is just temporary to avoid any conflicts or "dirty data".
+    db_items = []
     conn = sqlite3.connect('sql_app.db')
     c = conn.cursor()
-    c.execute('DELETE FROM items;',)
+    c.execute('DELETE FROM items;', )
     conn.commit()
     conn.close()
 
-    # ['project = REQ'] jql parameter to get the parent issue keys
+    # Generate HTTP API response from R4J API
+    issues_by_jira_search = jira.search_issues(f'project={project_id}')
     response = get_requirements_path_for_issues(HOST_URL, USER, PASSWORD, f'project = {project_id}')
 
     # Check response if requirements path are found
@@ -71,13 +76,18 @@ def create_items(db: Session, project_id):
                     txt = txt[0].split('.')
                     pkg = txt[1]
                     issue_type = paths[0]['path'][0]
-                    db_BR = models.Item(project_id=project_id, issue_id=issue_id, issue_type=issue_type, package=pkg)
-                    db.add(db_BR)
+                    db_items = models.Item(project_id=project_id, issue_id=issue_id, issue_type=issue_type, package=pkg)
+                    db.add(db_items)
                     db.commit()
-                    db.refresh(db_BR)
+                    db.refresh(db_items)
+                elif 'RP' not in str(paths[0]['path']):
+                    issue_type = paths[0]['path'][0]
+                    db_items = models.Item(project_id=project_id, issue_id=issue_id, issue_type=issue_type)
+                    db.add(db_items)
+                    db.commit()
+                    db.refresh(db_items)
 
             count += 1
-    return db_BR
-    # else:
-    #     print('Error code: ', response.status_code)
-    #     print(response.text)
+    return db_items
+
+

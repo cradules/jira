@@ -15,7 +15,6 @@ class Item(ItemBase):
     issue_id: str
     issue_type: str
     package: str
-    # linked_issues: str
 
     class Config:
         orm_mode = True
