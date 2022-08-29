@@ -7,6 +7,13 @@ from requests.auth import HTTPBasicAuth
 import json
 import os
 from jira import JIRA
+import sqlite3
+import os
+
+data_dir = "sql_app.db"
+
+con = sqlite3.connect(data_dir, check_same_thread=False)
+cur = con.cursor()
 
 HOST_URL = os.getenv('HOST_URL')
 USER = os.getenv('USER')
@@ -58,9 +65,22 @@ def get_requirements_path_for_issues(host_url, username, password, jql):
 #     print(response.text)
 
 
-issues = jira.search_issues('project=REQSDLC')
-issues_list = []
-for issue in issues:
-    print(issue.fields.issuetype)
-    issues_list.append(issue.fields.issuetype)
-print(issues_list)
+# issues = jira.search_issues('project=REQSDLC')
+# issues_list = []
+# for issue in issues:
+#     print(issue.fields.issuetype)
+#     issues_list.append(issue.fields.issuetype)
+# print(issues_list)
+
+# def update_br_specific_id():
+#     cur.execute("SELECT issue_id FROM items WHERE issue_type = 'Business Requirements'")
+#     queries = cur.fetchall()
+#     for query in queries:
+#         cur.execute('SELECT package FROM items WHERE issue_id = ?', query)
+#         package_raw = cur.fetchall()
+#         package = package_raw[0][0]
+#         issue = jira.issue(query)
+#         issue.update(fields={'customfield_10701': package})
+
+#
+# update_br_specific_id()

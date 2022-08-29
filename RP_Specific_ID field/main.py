@@ -14,13 +14,14 @@ USER = os.getenv('USER')
 PASSWORD = os.getenv('PASSWORD')
 PROJECT_ID = os.getenv('PROJECT_ID')
 
-
 jira = JIRA(server=HOST_URL, basic_auth=(USER, PASSWORD))
 
 data_dir = "sql_app.db"
 
 con = sqlite3.connect(data_dir, check_same_thread=False)
 cur = con.cursor()
+
+app = FastAPI()
 
 
 def connection_db(conn, task):
@@ -51,18 +52,20 @@ def update_issue_link():
                 print("\tOutward: " + outwardIssue.key)
                 if 'part of requirement' in str(outwardIssue_type):
                     connection_db(con, (str(outwardIssue), str(issue_id)))
-        #     if hasattr(link, "inwardIssue"):
-        #         inwardIssue = link.inwardIssue
-        #         print("\tInward: " + inwardIssue.key)
-        # if 'id' in str(issue_link):
-        #     issue_link_id = issue_link[0]
-        #     print(issue_link_id)
-        #     update_items(con, (str(issue_link_id), str(issue_by_id)))
+
+
+def update_br_specific_id():
+    cur.execute("SELECT issue_id FROM items WHERE issue_type = 'Business Requirements'")
+    queries = cur.fetchall()
+    for query in queries:
+        cur.execute('SELECT package FROM items WHERE issue_id = ?', query)
+        package_raw = cur.fetchall()
+        package = package_raw[0][0]
+        issue = jira.issue(query)
+        issue.update(fields={'customfield_10701': package})
 
 
 models.Base.metadata.create_all(bind=engine)
-
-app = FastAPI()
 
 
 @app.post("/items/")
@@ -73,6 +76,7 @@ def create_item_db(
 ):
     create_items(db=db, project_id=project_id)
     update_issue_link()
+    update_br_specific_id()
     return "Done"
 
 
