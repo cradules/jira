@@ -84,3 +84,19 @@ def get_requirements_path_for_issues(host_url, username, password, jql):
 
 #
 # update_br_specific_id()
+
+
+
+
+def id_field(field_name):
+    fields = jira.fields()
+
+    for f in fields:
+        if f['name'] == field_name:
+            return f['id']
+
+
+screens = jira.screens()
+
+
+print(screens[0])

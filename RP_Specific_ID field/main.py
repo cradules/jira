@@ -38,6 +38,16 @@ def connection_db(conn, task):
     conn.commit()
 
 
+# Extract the ID filed by field name
+def id_field(field_name):
+    fields = jira.fields()
+
+    for f in fields:
+        if f['name'] == field_name:
+            return f['id']
+
+
+# Update DB "linked_issue" column
 def update_issue_link():
     shrs = cur.execute("SELECT issue_id FROM items WHERE issue_type != 'Business Requirements'")
     for shr in shrs:
@@ -54,7 +64,8 @@ def update_issue_link():
                     connection_db(con, (str(outwardIssue), str(issue_id)))
 
 
-def update_br_specific_id():
+# Update
+def update_br_specific_id(filed_name):
     cur.execute("SELECT issue_id FROM items WHERE issue_type = 'Business Requirements'")
     queries = cur.fetchall()
     for query in queries:
@@ -62,7 +73,8 @@ def update_br_specific_id():
         package_raw = cur.fetchall()
         package = package_raw[0][0]
         issue = jira.issue(query)
-        issue.update(fields={'customfield_10701': package})
+        field_id = id_field(filed_name)
+        issue.update(fields={field_id: package})
 
 
 models.Base.metadata.create_all(bind=engine)
@@ -76,7 +88,7 @@ def create_item_db(
 ):
     create_items(db=db, project_id=project_id)
     update_issue_link()
-    update_br_specific_id()
+    update_br_specific_id('RP Specific ID')
     return "Done"
 
 
