@@ -22,6 +22,7 @@ con = sqlite3.connect(data_dir, check_same_thread=False)
 cur = con.cursor()
 
 app = FastAPI()
+models.Base.metadata.create_all(bind=engine)
 
 
 def connection_db(conn, task):
@@ -48,7 +49,7 @@ def id_field(field_name):
 
 
 # Update DB "linked_issue" column
-def update_issue_link():
+def update_db_issue_link():
     shrs = cur.execute("SELECT issue_id FROM items WHERE issue_type != 'Business Requirements'")
     for shr in shrs:
         issue_id = jira.issue(shr[0])
@@ -81,7 +82,36 @@ def update_br_specific_id(filed_name):
         issue.update(fields={field_id: package})
 
 
-models.Base.metadata.create_all(bind=engine)
+def update_pkg_db_other(req_type):
+    cur.execute(f"SELECT issue_id FROM items WHERE issue_type == '{req_type}'")
+    queries = cur.fetchall()
+    print(queries)
+    i = 0
+    for query in queries:
+        print(query)
+        cur.execute('SELECT linked_issues FROM items WHERE issue_id = ?', query)
+        br_id_raw = cur.fetchall()
+        br_id = br_id_raw[0]
+        cur.execute('SELECT package FROM items WHERE issue_id = ?', br_id)
+        package_raw = cur.fetchall()
+        i = i + 1
+        package_db = str(package_raw[0][0]) + "." + str(i)
+        cur.execute(f"UPDATE items SET package = '{package_db}' where issue_id = '{query[0]}'")
+    con.commit()
+
+
+def update_other_id_jira(req_type, field_name):
+    cur.execute(f"SELECT issue_id FROM items where issue_type = '{req_type}'")
+    issues_db_id = cur.fetchall()
+    for issue_db_id in issues_db_id:
+        cur.execute('SELECT package FROM items WHERE issue_id = ?', issue_db_id)
+        package_raw = cur.fetchall()
+        package = package_raw[0][0]
+        issue_raw = issue_db_id[0]
+        issue = jira.issue(issue_raw)
+        field_id = id_field(field_name)
+        issue.update(fields={field_id: package})
+        print('Filed "{}" with ID {} for issue with ID {} has been updated'.format(field_name, field_id, issue_db_id[0]))
 
 
 # updatge SHR
@@ -102,10 +132,19 @@ def create_item_db(
         db: Session = Depends(get_db)
 
 ):
+    # Populate DB with reqs
     create_items(db=db, project_id=project_id)
-    update_issue_link()
+    update_db_issue_link()
     update_br_specific_id('RP Specific ID')
-    return "Done"
+    update_pkg_db_other("Stakeholder Requirements")
+    update_pkg_db_other("Functional Requirements")
+    update_pkg_db_other("Non-Functional requirements")
+
+    update_other_id_jira('Stakeholder Requirements', 'RP Specific ID')
+    update_other_id_jira('Functional Requirements', 'RP Specific ID')
+    update_other_id_jira('Non-Functional requirements', 'RP Specific ID')
+    cur.execute('SELECT * from items')
+    return cur.fetchall()
 
 
 uvicorn.run(app, host="0.0.0.0", port=5001, log_level="info")
