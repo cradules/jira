@@ -23,6 +23,20 @@ PROJECT_ID = os.getenv('PROJECT_ID')
 jira = JIRA(server=HOST_URL, basic_auth=(USER, PASSWORD))
 
 
+def connection_db(conn, task):
+    """
+    update priority, begin_date, and end date of a task
+    :param conn:
+    :param task:
+    :return: project id
+    """
+    sql = ''' UPDATE items
+              SET linked_issues = ?
+              WHERE issue_id = ? '''
+    cur.execute(sql, task)
+    conn.commit()
+
+
 # Read r4j API https://easesolutions.atlassian.net/wiki/spaces/REQ4J/pages/73433185/Get+Requirement+version
 def get_requirements_path_for_issues(host_url, username, password, jql):
     """
@@ -72,31 +86,37 @@ def get_requirements_path_for_issues(host_url, username, password, jql):
 #     issues_list.append(issue.fields.issuetype)
 # print(issues_list)
 
-# def update_br_specific_id():
-#     cur.execute("SELECT issue_id FROM items WHERE issue_type = 'Business Requirements'")
-#     queries = cur.fetchall()
-#     for query in queries:
-#         cur.execute('SELECT package FROM items WHERE issue_id = ?', query)
-#         package_raw = cur.fetchall()
-#         package = package_raw[0][0]
-#         issue = jira.issue(query)
-#         issue.update(fields={'customfield_10701': package})
+# Update DB "linked_issue" column
+def update_issue_link():
+    shrs = cur.execute("SELECT issue_id FROM items WHERE issue_type != 'Business Requirements'")
+    for shr in shrs:
+        issue_id = jira.issue(shr[0])
+        issue_links = issue_id.fields.issuelinks
+        # print(issue_id)
+        for link in issue_links:
+            if hasattr(link, "outwardIssue"):
+                outwardIssue = link.outwardIssue
+                outwardIssue_type = link.type.outward
+                print(outwardIssue_type)
+                if 'part of requirement' in str(outwardIssue_type):
+                    # print(issue_id, outwardIssue)
+                    c = con.cursor()
+                    c.execute('UPDATE items SET linked_issues = ? WHERE issue_id = ?', (str(outwardIssue), str(issue_id)))
+                    c.fetchall()
+
+
+update_issue_link()
 
 #
-# update_br_specific_id()
-
-
-
-
-def id_field(field_name):
-    fields = jira.fields()
-
-    for f in fields:
-        if f['name'] == field_name:
-            return f['id']
-
-
-screens = jira.screens()
-
-
-print(screens[0])
+# def id_field(field_name):
+#     fields = jira.fields()
+#
+#     for f in fields:
+#         if f['name'] == field_name:
+#             return f['id']
+#
+#
+# screens = jira.screens()
+#
+#
+# print(screens[0])

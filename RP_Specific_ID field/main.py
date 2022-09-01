@@ -53,15 +53,19 @@ def update_issue_link():
     for shr in shrs:
         issue_id = jira.issue(shr[0])
         issue_links = issue_id.fields.issuelinks
-        print(issue_id)
         for link in issue_links:
             if hasattr(link, "outwardIssue"):
                 outwardIssue = link.outwardIssue
                 outwardIssue_type = link.type.outward
-                print(issue_id, link)
+                print(outwardIssue_type)
                 print("\tOutward: " + outwardIssue.key)
                 if 'part of requirement' in str(outwardIssue_type):
-                    connection_db(con, (str(outwardIssue), str(issue_id)))
+                    query = f"UPDATE items SET linked_issues = '{outwardIssue}' WHERE issue_id = '{issue_id}'"
+                    print(query)
+                    c = con.cursor()
+                    c.execute(query)
+                    c.fetchall()
+        con.commit()
 
 
 # Update
@@ -79,6 +83,18 @@ def update_br_specific_id(filed_name):
 
 models.Base.metadata.create_all(bind=engine)
 
+
+# updatge SHR
+
+# Does the requirement I'm trying to name a father in the same package?
+#
+# YES --> is there more than one father in the same package?
+#
+# ____YES--> take any (e.g. the lowest number one)
+#
+# ____NO--> Take that one
+#
+# NO--> put 00 in the position of the name that belongs to the father
 
 @app.post("/items/")
 def create_item_db(
