@@ -126,7 +126,7 @@ def update_other_id_jira(req_type, field_name):
 #
 # NO--> put 00 in the position of the name that belongs to the father
 
-@app.post("/items/")
+@app.post("/update-rp-specific-id-field/")
 def create_item_db(
         project_id: str,
         db: Session = Depends(get_db)
